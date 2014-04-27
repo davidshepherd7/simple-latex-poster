@@ -1,0 +1,142 @@
+\ProvidesPackage{beamerthemedsmanchester}
+
+\selectcolormodel{rgb}
+\mode<presentation>
+
+% Allow all font sizes without errors
+\usepackage{lmodern}
+
+
+%% Define the colours
+%% ============================================================
+
+% University of manchester colours
+\DefineNamedColor{named}{uompurple}{RGB}{109, 0, 157}
+\DefineNamedColor{named}{uomorange}{RGB}{255, 204, 51}
+\DefineNamedColor{named}{bggrey}{RGB}{245,245,245}
+
+% Some more colours borrowed from tango.sty
+\DefineNamedColor{named}{skyblueB}{RGB}{34, 65, 164}
+\DefineNamedColor{named}{aluminiumA}{RGB}{238, 238, 236}
+\DefineNamedColor{named}{aluminiumC}{RGB}{186, 189, 182}
+
+
+
+% Set where to use colours
+% ============================================================
+
+% heading colours
+\setbeamercolor{headline}{fg=uomorange, bg=uompurple}
+\setbeamercolor{author in headline}{fg=aluminiumA}
+\setbeamercolor{institute in headline}{fg=aluminiumC}
+\setbeamercolor{separation line}{bg=black}
+
+% main background
+\setbeamercolor{normal text}{bg=white}
+
+% blocks
+\setbeamercolor{block body}{bg=bggrey, fg=black}
+\setbeamercolor{block title}{fg=uomorange, bg=uompurple}
+\setbeamerfont{block title}{size=\VeryHuge,series=\bf}
+
+% \item markers
+\setbeamercolor{structure}{fg=skyblueB}
+
+
+
+%% Other customisation
+%% ============================================================
+
+%% Use big triangles for itemise, for at least two levels of nesting
+\setbeamertemplate{itemize item}{\raisebox{0.12ex}{$\blacktriangleright$}\hskip0.1em}
+\setbeamertemplate{itemize subitem}{\raisebox{0.12ex}{$\triangleright$}\hskip0.1em}
+
+%% equal font sizes for all levels of enumeration
+\setbeamerfont{itemize/enumerate body}{size=\normalsize}
+\setbeamerfont{itemize/enumerate subbody}{size=\normalsize}
+\setbeamerfont{itemize/enumerate subsubbody}{size=\normalsize}
+
+% No navigation symbols needed on a poster
+\setbeamertemplate{navigation symbols}{}
+
+% Use numbers in figure captions
+\setbeamertemplate{caption}[numbered]
+
+% Use numbers in bibliography (instead of little images of a paper).
+\setbeamertemplate{bibliography item}[text]
+
+% Set gap between paragraphs to medium with no indents
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{\medskipamount}
+
+% Increase spacing in lists
+\newlength{\wideitemsep}
+\setlength{\wideitemsep}{\itemsep}
+\addtolength{\wideitemsep}{10pt}
+\let\olditem\item
+\renewcommand{\item}{\setlength{\itemsep}{\wideitemsep}\olditem}
+
+
+% counter for numbering poster boxes
+% ============================================================
+\newcounter{boxcounter}
+\stepcounter{boxcounter} % start from 1
+
+% actual command to use
+\newcommand{\boxnumber}{\theboxcounter.\ \stepcounter{boxcounter}}
+
+% use like:
+% \begin{block}{\boxnumber The title}
+%   Box contents...
+% \end{block}
+
+
+
+% Heading command
+% ============================================================
+
+\setbeamertemplate{headline}{
+  \leavevmode
+
+  \begin{beamercolorbox}[wd=\paperwidth]{headline}
+    \begin{columns}[T]
+
+      % Spacing
+      \begin{column}{.01\paperwidth}
+      \end{column}
+
+      %% Title, authors etc.
+      \begin{column}{.59\paperwidth}
+        \vskip12ex
+        \raggedright
+        \usebeamercolor{title in headline}{\color{fg}\textbf{\huge{\inserttitle}}\\[3ex]}
+        \usebeamercolor{author in headline}{\color{fg}\normalsize{\insertauthor}\\[1ex]}
+        \usebeamercolor{institute in headline}{\color{fg}\normalsize{\insertinstitute}\\[1ex]}
+      \end{column}
+
+      %% Logos : 2 x 2 grid of logos
+      \begin{column}{.18\paperwidth}
+        \vskip4ex
+        \begin{center}
+          \includegraphics[width=.85\linewidth]{logos/top_left}
+          \vskip4ex
+          % \includegraphics[width=.85\linewidth]{logos/bottom_left}
+        \end{center}
+      \end{column}
+      \begin{column}{.18\paperwidth}
+        \vskip4ex
+        \begin{center}
+          \includegraphics[width=.85\linewidth]{logos/top_right}
+          \vskip4ex
+          \includegraphics[width=.85\linewidth]{logos/bottom_right}
+        \end{center}
+      \end{column}
+
+    \end{columns}
+    \vskip4ex
+  \end{beamercolorbox}
+
+  \begin{beamercolorbox}[wd=\paperwidth]{lower separation line head}
+    \rule{0pt}{3pt}
+  \end{beamercolorbox}
+}

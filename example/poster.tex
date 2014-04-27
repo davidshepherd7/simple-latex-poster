@@ -1,0 +1,381 @@
+\documentclass[final]{beamer} % beamer 3.10: do NOT use option hyperref={pdfpagelabels=false}!
+
+%\documentclass[final,hyperref={pdfpagelabels=false}]{beamer} % beamer 3.07: get rid of beamer warnings
+
+\mode<presentation>{\usetheme{dsmanchester}}
+
+% Increase spacing in lists
+\newlength{\wideitemsep}
+\setlength{\wideitemsep}{\itemsep}
+\addtolength{\wideitemsep}{10pt}
+\let\olditem\item
+\renewcommand{\item}{\setlength{\itemsep}{\wideitemsep}\olditem}
+
+\usepackage[T1]{fontenc}
+
+%% Bibliograpy Tweaks
+%% ============================================================
+
+\usepackage[backend=biber,
+  natbib=true,
+  citestyle=numeric,
+  firstinits=true, % Only print initials of first names
+  isbn=false,
+  doi=false,
+]{biblatex}
+
+%% Use tiny font size for citations
+\renewcommand*{\bibfont}{\footnotesize}
+
+\addbibresource{citations.bib}
+
+% A superscript ciation command
+\DeclareCiteCommand{\supercite}[\mkbibsuperscript]
+  {\iffieldundef{prenote}
+     {}
+     {\BibliographyWarning{Ignoring prenote argument}}%
+   \iffieldundef{postnote}
+     {}
+     {\BibliographyWarning{Ignoring postnote argument}}}
+  {\usebibmacro{citeindex}%
+   \bibopenbracket\usebibmacro{cite}\bibclosebracket}
+  {\supercitedelim}
+  {}
+
+% Use superscript cite instead of normal ones
+\let\cite=\supercite
+
+
+
+% Portrait, A0, ?? scale =?
+\usepackage[orientation=portrait, size=a0, scale=1.3]{beamerposter}
+
+% Set height of page for use in arranging text boxes, after accounting for
+% heading, footer etc.
+\newlength{\columnheight}
+\setlength{\columnheight}{105cm}
+
+\newcommand{\email}{david.shepherd-2@man.ac.uk}
+
+\newcommand{\uomaddr}{The University of Manchester, Manchester, M13 9PL, UK}
+
+\title[sd_stiffness]{\Huge{Discretisation induced stiffness in \\ \vspace{0.3em} micromagnetic simulations}}
+\author[David Shepherd]{
+  \textit{David Shepherd}$^*$ (\texttt{\email{}}), Jim Miles$^*$, Matthias Heil$^\dagger$ and Milan Mihajlovi\'{c}$^*$}
+\institute{$*$ NEST Group, School of Computer Science, \uomaddr{} \\
+  $\dagger$ School of Mathematics, \uomaddr{}}
+
+
+
+% New way to define commands that allows multiple subscripts
+\makeatletter
+\newcommand\newsubcommand[3]{\newcommand#1{#2\sc@sub{#3}}}
+\def\sc@sub#1{\def\sc@thesub{#1}\@ifnextchar_{\sc@mergesubs}{_{\sc@thesub}}}
+\def\sc@mergesubs_#1{_{\sc@thesub#1}}
+\makeatother
+
+% Some new maths commands:
+\newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\mv}{\mathbf{m}}
+\newcommand{\hv}{\mathbf{h}}
+\newsubcommand{\happ}{\mathbf{h}}{{\text{ap}}} %applied
+\newsubcommand{\hms}{\mathbf{h}}{\text{ms}} % magnetostatic/demag
+\newsubcommand{\hex}{\mathbf{h}}{\text{ex}} % exchange
+\newsubcommand{\hca}{\mathbf{h}}{\text{ca}} % crystalline ansiotropy
+\newsubcommand{\hthm}{\mathbf{h}}{\text{th}} % thermal
+\newcommand{\nH}{H_{\mathbb{n}}} % A "magnitude" of H for normalisation
+\newcommand{\nF}{F_{\mathbb{n}}} % A "magnitude" of energy for normalisation
+
+
+% ie and eg
+\newcommand{\ie}{\textit{i.e.} }
+\newcommand{\cf}{\textit{c.f.} }
+\newcommand{\eg}{\textit{e.g.} }
+
+
+\begin{document}
+\begin{frame}
+
+  \begin{columns}
+
+    %% Left column:
+    %% ============================================================
+    \begin{column}{0.47\textwidth}
+
+      % For some reason we need parbox to get it to arrange the boxes
+      % with evenly spaced gaps
+      \parbox[t][\columnheight]{\textwidth}{
+
+        \begin{block}{Abstract}  % italic abstract
+            \begin{itshape}
+              \begin{itemize}
+              \item Micromagnetic models are sometimes stiff (explicit time integration is slow) but when and why?
+              \item Find that it can occur due to spatial discretisation alone.
+              \item Find that FEM/BEM magnetostatic calculations increases stiffness.
+              \item Find that decreasing damping parameter increases stiffness.
+              \end{itemize}
+            \end{itshape}
+        \end{block}
+
+        \vfill
+
+        \begin{block}{\boxnumber The Landau-Lifshitz-Gilbert equation}
+          \begin{itemize}
+          \item Dynamic micromagnetic models centre around solving the
+            Landau-Lifshitz-Gilbert equation (LLG).
+
+          \item Partial differential equations for behaviour of magnetisation in a
+            ferromagnetic material over time.
+
+          \item The non-dimensional Landau-Lifshitz-Gilbert equation is:
+            \begin{equation}
+              \pd{\mv}{t} = \underbrace{-\mv \times \hv[\mv]}_{\text{precession}}
+              + \underbrace{\alpha \mv \times \pd{\mv}{t}}_{\text{damping}}
+            \end{equation}
+
+            where the field terms are
+            \begin{equation}
+              \hv[\mv] = \underbrace{\happ}_{\text{applied }}
+              + \underbrace{\hms[\mv]}_{\text{magnetostatic}}
+              % + \underbrace{\hca[\mv]}_{\text{anisotropy}}
+              + \underbrace{\nabla^2 \mv}_{\text{exchange}}.
+            \end{equation}
+          \end{itemize}
+        \end{block}
+
+        \vfill
+
+        \begin{block}{\boxnumber Approaches to numerical solution of the LLG}
+          \begin{itemize}
+          \item Discretise LLG in space (\eg macrospin, finite difference, finite element).
+          \item Calculate magnetostatic effects (\eg Fourier transform, FEM/BEM).
+          \item Discretise in time (\eg Runge-Kutta, BDF2, implicit midpoint rule). Ideally
+            sufficiently \emph{stable}: don't need high time refinement to stop the solution exploding.
+          \end{itemize}
+        \end{block}
+
+        \vfill
+
+        \begin{block}{\boxnumber Implicit vs explicit methods} 
+          \begin{itemize} 
+          \item Explicit methods (\eg most Runge-Kutta methods, Predictor-Corrector methods):
+            \begin{itemize}
+            \item Calculate values at next time step in terms of values at previous steps: \emph{each step is cheap}.
+            \item Unstable for some problems: many extra steps needed for stability.
+            \end{itemize}
+
+          \item Implicit methods (\eg BDF2, implicit midpoint rule):
+            \begin{itemize}
+            \item Include value at the next step in the calculation: requires solution of a system of equations. 
+            \item More expensive but \emph{always stable}.
+            \end{itemize}
+
+          \item ``Stiff problem''
+            \begin{itemize}
+            \item When explicit methods require so many additional steps that they become inefficient. 
+            \item Can occur due to physics, \eg models of chemical reactions.
+            \item Can also occur due to fine spatial discretisations.
+            \end{itemize}
+          \end{itemize}
+        \end{block}
+
+        \vfill
+
+        \begin{block}{\boxnumber The experiment} 
+          \begin{columns}
+            \begin{column}{0.6\textwidth}
+              \begin{itemize}
+              \item Examine stiffness of a simple micromagnetic problem: coherent reversal of a small spherical nanoparticle\cite{Mallinson2000}, as shown in figure.
+              \item Try with single macrospin and with various finite element meshes.
+              \item Try with and without magnetostatics (using FEM/BEM method\cite{Knittel2011}).
+              \item Try various time integration methods
+                \begin{itemize}
+                \item Explicit 2nd order Runge-Kutta (RK2).
+                \item Implicit midpoint rule (IMR)\cite{DAquino2005}.
+                \item Semi-implicit midpoint rule (SIMR): implicit LLG with explicit magnetostatics\cite{Shepherd2014}.
+                \end{itemize}
+              \item Examine maximum stable time steps for each while varying parameters.
+              \end{itemize}
+            \end{column}
+
+            \begin{column}{0.4\textwidth}
+              \begin{figure}[h]
+                \centering
+                \includegraphics[width=\textwidth]{images/sphere.pdf}
+                \caption{Spherical nanoparticle of radius 1 exchange length in an applied field $\happ = [0, 0, -1.1]$. Initial magnetisation is slightly off the $z$-axis.}
+                \label{fig:sphere}
+              \end{figure} 
+            \end{column}
+
+          \end{columns}
+         
+      \end{block}
+
+
+      \vfill
+
+      \begin{block}{\boxnumber Macrospin results}
+        \begin{itemize}
+        \item Maximum time step tested is stable for all time integration methods.
+        \item Same with/without magnetostatics and with $\alpha = 1.0, 0.1$ or $0.01$.
+        \item Therefore problem is not physically stiff.
+        \end{itemize}
+      \end{block}
+
+        \vfill
+
+
+        % \begin{block}{\boxnumber An initial test case}
+        %   \begin{columns}
+
+        %     \begin{column}{0.65\textwidth}
+
+        %       \begin{itemize}
+        %       \item Small ellipsoidal nanoparticle (single domain, spatially constant magnetic field)
+        %       \item Strong uniaxial anisotropy: not much happens at first then suddenly switches. So time adaptivity very helpful.
+        %       \item Field applied along $-z$ axis.
+        %       \end{itemize}
+        %     \end{column}
+        %     \begin{column}{0.3\textwidth}
+        %       \includegraphics[width=0.9\textwidth]{images/ellipsoid.eps}
+        %     \end{column}
+        %   \end{columns}
+        % \end{block} 
+        % \vfill
+
+      } % end of parbox
+    \end{column}
+
+    %% Set up main right column:
+    %% ============================================================
+    \begin{column}{0.47\textwidth}
+      \parbox[t][\columnheight]{\textwidth}{
+
+        \vfill
+
+        \begin{block}{\boxnumber FEM results without magnetostatics}
+          \begin{figure}[h]
+            \begin{center}
+            \includegraphics[width=\textwidth]{images/stability_disabled.pdf}
+            \label{fig:stable-step-no-ms}
+            \vspace{-1.5em} % Hack to fix caption spacing
+            \caption{Maximum stable steps vs mesh fineness without magnetostatics. Dashed line shows RK2 time step needed for equal efficiency of IMR and RK2 method.}
+          \end{center}
+
+          \end{figure}
+          \begin{itemize}
+          \item Stiffer as spatial discretisation is improved.
+          \item Stiffer as damping decreases.
+          \end{itemize}
+        \end{block}
+
+        \vfill
+
+        \begin{block}{\boxnumber FEM results with magnetostatics}
+          \begin{figure}[h]
+            \begin{center}
+            \includegraphics[width=\textwidth]{images/stability_decoupled}
+            \label{fig:stable-step-ms}
+            \vspace{-1.5em} % Hack to fix caption spacing
+            \caption{Maximum stable steps vs mesh fineness with FEM/BEM magnetostatics.}
+          \end{center}
+          \end{figure}
+          \begin{itemize}
+          \item Qualitatively the same as above, but more stiff.
+          \item Semi-implicit method (implicit LLG, explicit magnetostatics) does not show any stability issues.
+          \end{itemize}
+        \end{block}
+
+        % \begin{block}{\boxnumber New adaptive implicit midpoint rule} 
+        %   \begin{itemize}
+
+        %   \item Implicit midpoint rule is a well known geometric integrator
+        %     \begin{equation}
+        %       \label{eq:imr}
+        %       \frac{\mv_{n+1} - \mv_n}{\Delta t} = 
+        %       \frac{\mv_{n+1} + \mv_n}{2} \times \left( \hv\left[\frac{\mv_{n+1} + \mv_n}{2} \right]
+        %         + \frac{\mv_{n+1} - \mv_n}{\Delta t} \right).
+        %     \end{equation}
+
+        %   \item Analysis shows conservation properties retained with adaptive time step.
+
+        %   \item Use a third order explicit backwards Euler method to get an error estimate.
+
+        %   \item Automatically select appropriate size for next step.
+
+        %   \item Example below for spatially independent LLG, \ie single spin in a magnetic field.
+
+        %   \end{itemize}
+
+        %   \begin{center}
+        %     \includegraphics[width=0.8\textwidth]{images/adaptivity_fig.eps}
+        %   \end{center}
+
+        %   \begin{center}
+        %     \includegraphics[width=0.8\textwidth]{images/midpoint-conservation}
+        %   \end{center}
+
+        % \end{block}
+
+        % \vfill
+
+        % \begin{block}{\boxnumber Conclusions}
+        %   \begin{itemize}
+        %   \item Gives perfect accuracy of magnetisation length unlike standard adaptive methods.
+        %   \item Gives $\sim 3$ orders of magnitude better accuracy in energy loss that standard adaptive methods.
+        %   \item More user-friendly and efficient than standard midpoint method due to step size adaptivity.
+        %   \end{itemize}
+        % \end{block}
+
+        % \vfill
+
+        % \begin{block}{\boxnumber Extension to FEM/BEM model}
+        %   \begin{itemize}
+        %   \item Requires fully implicit/coupled method for energy conservation.
+        %   \item Looking at efficient solvers for such a method (preconditioned Krylov solve, hierarchical BEM matrices).
+        %     \texttt{oomph-lib}\cite{oomph-lib-website}.
+        %   \end{itemize}
+        % \end{block}
+
+
+        \vfill
+
+        \begin{block}{\boxnumber Conclusions}
+          \begin{itemize}
+          \item Stiffness in micromagnetic simulations can arise purely from a fine spatial discretisation.
+          \item For realistic dynamic models (magnetostatics, $\alpha = 0.01$) the problem we examined is always stiff.
+          \item The semi-implicit method tested here shows no stability issues.
+          \end{itemize}
+        \end{block}
+
+        \vfill
+
+        \begin{block}{\boxnumber Acknowledgements}
+          This project is funded by the Engineering and Physical Sciences
+          Research Council (EPSRC) through the NoWNano Doctoral Training Centre on
+          grant number EP/G01705/1.
+        \end{block}
+
+        \vfill
+
+        \begin{block}{\boxnumber References}
+          \printbibliography
+        \end{block}
+
+        \vfill
+
+      } % end of parbox
+    \end{column}
+
+  \end{columns}
+\end{frame}
+
+\end{document}
+
+
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:
