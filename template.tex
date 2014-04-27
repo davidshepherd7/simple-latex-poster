@@ -4,11 +4,12 @@
 
 \mode<presentation>{\usetheme{dsmanchester}}
 
-% Portrait, A0, ?? scale =?
+% Portrait, A0 poster. Set scale as desired, but 1.3 gives easily readable text when printed.
 \usepackage[orientation=portrait, size=a0, scale=1.3]{beamerposter}
 
 % Set height of page for use in arranging text boxes, after accounting for
-% heading, footer etc.
+% heading, footer etc. This is a bit of a hack, ideally latex should figure
+% this out for itself!
 \newlength{\columnheight}
 \setlength{\columnheight}{105cm}
 
@@ -85,11 +86,3 @@
 \end{frame}
 
 \end{document}
-
-
-
-
-%%% Local Variables:
-%%% mode: latex
-%%% TeX-master: t
-%%% End:
